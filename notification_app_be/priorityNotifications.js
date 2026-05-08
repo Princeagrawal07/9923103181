@@ -1,35 +1,21 @@
-const notifications = [
-  {
-    id: 1,
-    type: "Placement",
-    message: "Google Hiring",
-    timestamp: "2026-05-08T10:00:00",
-  },
-  {
-    id: 2,
-    type: "Event",
-    message: "Tech Fest",
-    timestamp: "2026-05-08T09:00:00",
-  },
-  {
-    id: 3,
-    type: "Result",
-    message: "Mid Sem Result",
-    timestamp: "2026-05-08T11:00:00",
-  },
-  {
-    id: 4,
-    type: "Placement",
-    message: "Microsoft Hiring",
-    timestamp: "2026-05-08T12:00:00",
-  },
-  {
-    id: 5,
-    type: "Event",
-    message: "Hackathon",
-    timestamp: "2026-05-07T08:00:00",
-  },
-];
+const axios = require("axios");
+require("dotenv").config();
+
+async function getToken() {
+  const response = await axios.post(
+    `${process.env.BASE_URL}/auth`,
+    {
+      email: process.env.EMAIL,
+      name: process.env.NAME,
+      rollNo: process.env.ROLL_NO,
+      accessCode: process.env.ACCESS_CODE,
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+    }
+  );
+
+  return response.data.access_token;
+}
 
 const weights = {
   Placement: 3,
@@ -37,26 +23,57 @@ const weights = {
   Event: 1,
 };
 
-function getPriorityScore(notification) {
-  const weight = weights[notification.type];
+function calculatePriority(notification) {
+  const weight =
+    weights[notification.type] || 1;
 
   const recency =
-    new Date(notification.timestamp).getTime() / 1000000000;
+    new Date(notification.timestamp).getTime();
 
-  return weight * 1000 + recency;
+  return weight * 10000000000000 + recency;
 }
 
-function getTopNotifications(data, topN = 10) {
-  return data
-    .sort(
+async function getTopNotifications() {
+  try {
+    const token = await getToken();
+
+    const response = await axios.get(
+      `${process.env.BASE_URL}/notifications`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const notifications =
+      response.data.notifications || [];
+
+    const unreadNotifications =
+      notifications.filter(
+        (notification) => !notification.isRead
+      );
+
+    unreadNotifications.sort(
       (a, b) =>
-        getPriorityScore(b) - getPriorityScore(a)
-    )
-    .slice(0, topN);
+        calculatePriority(b) -
+        calculatePriority(a)
+    );
+
+    const top10 =
+      unreadNotifications.slice(0, 10);
+
+    console.log(
+      "\nTop Priority Notifications:\n"
+    );
+
+    console.log(top10);
+
+  } catch (err) {
+    console.log(
+      err.response?.data || err.message
+    );
+  }
 }
 
-const topNotifications = getTopNotifications(notifications);
-
-console.log("Top Priority Notifications:\n");
-
-console.log(topNotifications);
+getTopNotifications();
