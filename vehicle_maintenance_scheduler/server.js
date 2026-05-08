@@ -1,5 +1,6 @@
 const express = require("express");
 const fetchData = require("./scheduler");
+const Log = require("./logger");
 
 const app = express();
 
@@ -31,6 +32,14 @@ function knapsack(tasks, maxHours) {
 
 app.get("/", async (req, res) => {
   try {
+
+    await Log(
+      "backend",
+      "info",
+      "controller",
+      "Fetching depot and vehicle data"
+    );
+
     const data = await fetchData();
 
     const depots = data.depots.depots;
@@ -49,8 +58,24 @@ app.get("/", async (req, res) => {
       };
     });
 
+    await Log(
+      "backend",
+      "info",
+      "service",
+      "Vehicle optimization completed successfully"
+    );
+
     res.json(results);
+
   } catch (err) {
+
+    await Log(
+      "backend",
+      "error",
+      "handler",
+      err.message
+    );
+
     res.status(500).json({
       error: err.message,
     });
