@@ -64,9 +64,36 @@ Tools:
 - RabbitMQ
 - Kafka
 
-
 # Stage 6
+## Approach
 
-Priority notifications are ranked using:
+Notifications are fetched dynamically from the provided Notification API.
+
+Each notification is assigned a priority score using:
 - notification type weight
-- recency
+- recency timestamp
+
+Priority Weights:
+- Placement = 3
+- Result = 2
+- Event = 1
+
+Unread notifications are filtered first.
+
+The notifications are then sorted based on:
+1. Higher priority weight
+2. More recent timestamp
+
+Finally, the top 10 notifications are returned.
+
+## Efficient Maintenance of Top 10
+
+To efficiently maintain the top 10 notifications when new notifications arrive continuously:
+- use a Min Heap / Priority Queue of size 10
+- compare incoming notification priority with heap minimum
+- replace minimum if incoming notification has higher priority
+
+This ensures:
+- insertion complexity: O(log 10)
+- efficient real-time updates
+- scalable notification ranking
